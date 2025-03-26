@@ -1,0 +1,10 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+if [[ ! -f /config/config.yml ]]; then
+    cp /config.yml /config/config.yml
+fi
+
+# permissions
+lsiown -R abc:abc \
+    /config
