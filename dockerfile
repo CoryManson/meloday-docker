@@ -37,7 +37,6 @@ RUN \
 # copy all necessary files in a single step
 COPY root/ /
 COPY meloday.py /tmp/meloday.py
-COPY moodmap.json /tmp/moodmap.json
 COPY assets/ /tmp/assets/
 COPY config.yml /tmp/config.yml
 

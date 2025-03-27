@@ -1,18 +1,23 @@
 #!/usr/bin/with-contenv bash
 # shellcheck shell=bash
 
-# Check if the meloday.py file exists in /app, and copy it from /meloday if it doesn't
+# Ensure meloday.py exists in /app; copy it from /tmp and make it executable if missing
 if [[ ! -f /app/meloday.py ]]; then
     cp /tmp/meloday.py /app/meloday.py
     chmod +x /app/meloday.py
 fi
 
-# Check if the assets directory symlink exists in /app, and create it if it doesn't
+# Ensure moodmap.json exists in /app; copy it from /tmp if missing
+if [[ ! -f /app/moodmap.json ]]; then
+    cp /tmp/moodmap.json /app/moodmap.json
+fi
+
+# Ensure the assets directory symlink exists in /app; create it if missing
 if [[ ! -d /app/assets/ ]]; then
     ln -s /config/assets /app/assets
 fi
 
-# Check if the config.yml symlink exists in /app, and create it if it doesn't
+# Ensure the config.yml symlink exists in /app; create it if missing
 if [[ ! -f /app/config.yml ]]; then
     ln -s /config/config.yml /app/config.yml
 fi
