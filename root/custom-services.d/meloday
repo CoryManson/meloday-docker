@@ -52,7 +52,7 @@ while true; do
         echo "Meloday run complete for $current_period."
         previous_period="$current_period"
     fi
-    sleep 60  # Check every minute
-    echo "Sleeping for 60 seconds..."  # Added output to indicate the script is waiting
+    echo "Sleeping for 10 minutes..."  # Updated output to reflect new sleep period
     echo "---"  # Separator for better readability in logs
+    sleep 600  # Check every 10 minutes
 done
