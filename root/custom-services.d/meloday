@@ -54,7 +54,7 @@ while true; do
         previous_period="$current_period"
         first_run=false  # Reset the first run flag after execution
     fi
-    sleep 600  # Check every 10 minutes
     echo "Sleeping for 10 minutes..."  # Updated output to reflect new sleep period
     echo "---"  # Separator for better readability in logs
+    sleep 600  # Check every 10 minutes
 done
