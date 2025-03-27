@@ -1,0 +1,10 @@
+#!/usr/bin/with-contenv bash
+### Default values
+sleepInterval='3m'
+
+log "Running meloday..."
+# run py script
+python /app/meloday.py -c
+
+log "Meloday run Complete. Sleeping for ${sleepInterval}."
+sleep ${sleepInterval}

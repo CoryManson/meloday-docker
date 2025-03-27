@@ -1,0 +1,18 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+# Check if the meloday.py file exists in /app, and copy it from /meloday if it doesn't
+if [[ ! -f /app/meloday.py ]]; then
+    cp /meloday/meloday.py /app/meloday.py
+    chmod +x /app/meloday.py
+fi
+
+# Check if the assets directory symlink exists in /app, and create it if it doesn't
+if [[ ! -d /app/assets/ ]]; then
+    ln -s /config/assets/ /app/assets/
+fi
+
+# Check if the config.conf symlink exists in /app, and create it if it doesn't
+if [[ ! -d /app/config.conf ]]; then
+    ln -s /config/config.conf /app/config.conf
+fi
