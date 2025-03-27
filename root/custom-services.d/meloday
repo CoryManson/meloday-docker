@@ -1,4 +1,7 @@
 #!/usr/bin/with-contenv bash
 
+# change to the /app directory
+cd /app || { echo "Failed to change directory to /app"; exit 1; }
+
 # Launch the Python script
-python /app/wrapper.py
+python wrapper.py || { echo "Failed to execute wrapper.py"; exit 1; }
