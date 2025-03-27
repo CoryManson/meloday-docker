@@ -2,8 +2,6 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
@@ -37,4 +35,4 @@ jobs:
         context: .
         file: ./dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/meloday:preview
+        tags: ${{ secrets.DOCKER_USERNAME }}/meloday:${{ github.ref_name == 'main' && 'latest' || github.ref_name }}
