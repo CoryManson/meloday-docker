@@ -2,13 +2,6 @@
 
 FROM ghcr.io/linuxserver/baseimage-alpine:3.21
 
-# set version label
-# ARG BUILD_DATE
-# ARG VERSION
-# ARG LIMNORIA_RELEASE
-# LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
-# LABEL maintainer="corymanson"
-
 RUN \
   echo "**** install build packages ****" && \
   apk add --no-cache --virtual=build-dependencies \

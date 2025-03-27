@@ -43,16 +43,18 @@ done
 
 # Main loop to run the script only at the change of a time period
 previous_period=""
+first_run=true  # Flag to ensure meloday.py runs on first execution
 while true; do
     echo "Checking current time period..."  # Added output to indicate the script is running
     current_period=$(get_current_time_period)
-    if [[ "$current_period" != "$previous_period" ]]; then
-        echo "Time period changed to $current_period. Running meloday..."
+    if [[ "$first_run" = true || "$current_period" != "$previous_period" ]]; then
+        echo "Time period changed to $current_period or first run. Running meloday..."
         python /app/meloday.py -c
         echo "Meloday run complete for $current_period."
         previous_period="$current_period"
+        first_run=false  # Reset the first run flag after execution
     fi
+    sleep 600  # Check every 10 minutes
     echo "Sleeping for 10 minutes..."  # Updated output to reflect new sleep period
     echo "---"  # Separator for better readability in logs
-    sleep 600  # Check every 10 minutes
 done
