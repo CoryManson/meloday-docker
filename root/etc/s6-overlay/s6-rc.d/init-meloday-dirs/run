@@ -13,6 +13,6 @@ if [[ ! -d /app/assets/ ]]; then
 fi
 
 # Check if the config.yml symlink exists in /app, and create it if it doesn't
-if [[ ! -d /app/config.conf ]]; then
+if [[ ! -d /app/config.yml ]]; then
     ln -s /config/config.yml /app/config.yml
 fi
