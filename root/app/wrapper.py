@@ -42,8 +42,8 @@ def main():
             logging.info("Executing meloday.py script.")
             subprocess.run(["python", "/app/meloday.py"])
 
-        logging.info("Sleeping for 60 seconds before checking again.")
-        time.sleep(60)  # Check every minute
+        logging.info("Sleeping for 10 minutes before checking again.")
+        time.sleep(600)  # Check every 10 minutes
 
 if __name__ == "__main__":
     main()
