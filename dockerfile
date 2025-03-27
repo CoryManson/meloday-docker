@@ -34,13 +34,12 @@ RUN \
     /tmp/* \
     $HOME/.cache
 
-
 # copy all necessary files in a single step
-COPY root/ / \
-    meloday.py /tmp/meloday.py \
-    moodmap.json /tmp/moodmap.json \
-    assets/ /tmp/assets/ \
-    config.json /tmp/config.json
+COPY root/ /
+COPY meloday.py /tmp/meloday.py
+COPY moodmap.json /tmp/moodmap.json
+COPY assets/ /tmp/assets/
+COPY config.json /tmp/config.json
 
 # volumes
 VOLUME /config
