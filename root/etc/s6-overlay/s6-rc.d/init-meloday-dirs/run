@@ -7,6 +7,11 @@ if [[ ! -f /app/meloday.py ]]; then
     chmod +x /app/meloday.py
 fi
 
+# Ensure moodmap.json exists in /app; copy it from /meloday/assets if missing
+if [[ ! -f /app/moodmap.json ]]; then
+    ln -s /config/assets/moodmap.json /app/moodmap.json
+fi
+
 # Check if the assets directory symlink exists in /app, and create it if it doesn't
 if [[ ! -d /app/assets/ ]]; then
     ln -s /config/assets /app/assets
