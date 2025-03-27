@@ -44,6 +44,7 @@ done
 # Main loop to run the script only at the change of a time period
 previous_period=""
 while true; do
+    echo "Checking current time period..."  # Added output to indicate the script is running
     current_period=$(get_current_time_period)
     if [[ "$current_period" != "$previous_period" ]]; then
         echo "Time period changed to $current_period. Running meloday..."
@@ -52,4 +53,6 @@ while true; do
         previous_period="$current_period"
     fi
     sleep 60  # Check every minute
+    echo "Sleeping for 60 seconds..."  # Added output to indicate the script is waiting
+    echo "---"  # Separator for better readability in logs
 done
