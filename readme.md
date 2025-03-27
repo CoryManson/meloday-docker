@@ -1,8 +1,10 @@
-# Docker support coming soon
+# Docker Support for Meloday
+
+This repository provides Docker support for [Meloday](https://github.com/trackstacker/meloday), a script that **automatically creates playlists throughout the day**, evolving with your listening habits. The Docker setup simplifies deployment and ensures a consistent runtime environment.
 
 # Overview
 
-[Meloday](https://github.com/trackstacker/meloday) is a script that **automatically creates playlists throughout the day**, evolving with your listening habits. Inspired by Spotify’s **daylist**, it pulls tracks from your **Plex listening history**, finds **patterns in what you like at different times**, and builds a mix that feels both **familiar and fresh**—without getting repetitive.
+Meloday is a script that **automatically creates playlists throughout the day**, evolving with your listening habits. Inspired by Spotify’s **daylist**, it pulls tracks from your **Plex listening history**, finds **patterns in what you like at different times**, and builds a mix that feels both **familiar and fresh**—without getting repetitive.
 
 Each playlist update brings a **new cover, a new name, and a fresh mix of tracks** that fit the current moment. It also reaches into a **custom-built mood map** filled with different ways to describe the playlist’s vibe, so the names always stay interesting.
 
@@ -15,6 +17,38 @@ Each playlist update brings a **new cover, a new name, and a fresh mix of tracks
 * **Automatically updates itself** – No manual curation needed.
 * **Applies custom covers and descriptions** – The playlist gets a new look each time it updates.
 * **Gets creative with playlist names** – It pulls words from a mood map for extra variety.
+
+# Docker Setup
+
+## Prerequisites
+
+* Docker installed on your system.
+* A Plex Media Server with a music library.
+
+## How to Use
+
+1. Pull the Docker image from Docker Hub:
+   ```bash
+   docker pull cozza38/meloday
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -d \
+       -v /path/to/config:/config \
+       cozza38/meloday
+   ```
+
+   Replace `/path/to/config` with the appropriate paths on your system.
+
+3. Edit config.yml on your mounted volume
+
+4. Restart the container
+
+5. Check the logs to ensure the container is running correctly:
+   ```bash
+   docker logs <container_id>
+   ```
 
 # What It Doesn’t Do
 
@@ -77,13 +111,10 @@ Meloday works best with **larger music libraries**. Since it pulls from **your o
 
 # What’s Changed Since v2
 
-* **No more OpenAI** – Focused on **core functionality first** before expanding into AI recommendations in the future.
-* **Mood map integration** – More **random and creative titles/descriptions** based on expanded word choices.
-* **Plex username support** – The playlist description now **includes your Plex username** for a more personal touch.
-* **Next update time in the description** – Now tells you **exactly when the playlist will refresh**.
-* **More fallback methods** – If not enough historical data is available, Meloday will **use additional logic to fill the playlist** instead of leaving gaps.
-* **Now strictly maintains a single playlist** – Meloday is designed to provide one evolving playlist that updates throughout the day. The logic has been improved to ensure it no longer creates multiple playlists unintentionally. If you experienced this issue before, it should now be resolved.
+* **Docker support added** – Simplified deployment with a Docker container.
+* **Dynamic time period handling** – The script now reads time periods directly from the `config.yml` file.
+* **Improved error handling** – Ensures smooth operation and better debugging.
 
 # Who Made This?
 
-Just me, and a bit of help from ChatGPT! I’m learning as I go, and this seemed like a fun project to try out. It started as a small project for myself, but as I continued to use it, I found it really enjoyable and exciting to look forward to listening to every day! I figured I'd share it with the community, get more feedback, share the idea and see what happened! If you’re enjoying Meloday and feel like saying thanks, [a coffee is always appreciated](https://buymeacoffee.com/trackstack). No pressure at all though, I just want people to enjoy it!
+This project was created by [trackstacker](https://github.com/trackstacker) with contributions from the community. If you’re enjoying Meloday and feel like saying thanks, [a coffee is always appreciated](https://buymeacoffee.com/trackstack). No pressure at all though, I just want people to enjoy it!
