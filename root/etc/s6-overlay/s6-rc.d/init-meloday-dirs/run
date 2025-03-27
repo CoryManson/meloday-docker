@@ -9,7 +9,7 @@ fi
 
 # Ensure moodmap.json exists in /app; copy it from /tmp if missing
 if [[ ! -f /app/moodmap.json ]]; then
-    cp /tmp/moodmap.json /app/moodmap.json
+    ln -s /app/assets/moodmap.json /app/moodmap.json
 fi
 
 # Ensure the assets directory symlink exists in /app; create it if missing
