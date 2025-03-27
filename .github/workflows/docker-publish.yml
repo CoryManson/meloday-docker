@@ -31,5 +31,6 @@ jobs:
       with:
         context: .
         file: ./dockerfile
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/meloday:latest
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/meloday:${{ github.ref_name == 'main' && 'latest' || github.sha }}
