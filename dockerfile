@@ -39,7 +39,7 @@ COPY root/ /
 COPY meloday.py /tmp/meloday.py
 COPY moodmap.json /tmp/moodmap.json
 COPY assets/ /tmp/assets/
-COPY config.json /tmp/config.json
+COPY config.yml /tmp/config.yml
 
 # volumes
 VOLUME /config
