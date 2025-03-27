@@ -3,11 +3,11 @@
 FROM ghcr.io/linuxserver/baseimage-alpine:3.21
 
 # set version label
-ARG BUILD_DATE
-ARG VERSION
-ARG LIMNORIA_RELEASE
+# ARG BUILD_DATE
+# ARG VERSION
+# ARG LIMNORIA_RELEASE
 # LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
-LABEL maintainer="corymanson"
+# LABEL maintainer="corymanson"
 
 RUN \
   echo "**** install build packages ****" && \
@@ -25,7 +25,7 @@ RUN \
     wheel && \
   pip install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/alpine-3.21/ \
     -r https://raw.githubusercontent.com/trackstacker/meloday/refs/heads/main/requirements.txt && \
-  printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
+  git clone https://github.com/trackstacker/meloday.git \
   echo "**** cleanup ****" && \
   apk del --purge \
     build-dependencies && \

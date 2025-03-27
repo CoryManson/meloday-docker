@@ -2,7 +2,11 @@
 # shellcheck shell=bash
 
 if [[ ! -f /config/config.yml ]]; then
-    cp /config.yml /config/config.yml
+    cp /meloday/config.yml /config/config.yml
+fi
+
+if [[ ! -f /config/assets/ ]]; then
+    cp -r /meloday/assets/ /config/assets/
 fi
 
 # permissions
