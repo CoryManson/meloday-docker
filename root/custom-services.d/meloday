@@ -47,10 +47,12 @@ first_run=true  # Flag to ensure meloday.py runs on first execution
 while true; do
     echo "Checking current time period..."  # Added output to indicate the script is running
     current_period=$(get_current_time_period)
+    echo "Current time period: $current_period"  # Output the current time period
+    echo "Previous time period: $previous_period"  # Output the previous time period
     if [[ "$first_run" = true || "$current_period" != "$previous_period" ]]; then
-        echo "Time period changed to $current_period or first run. Running meloday..."
+        echo "Time period changed or first run. Running meloday..."
         python /app/meloday.py -c
-        echo "Meloday run complete for $current_period."
+        echo "Meloday run complete."
         previous_period="$current_period"
         first_run=false  # Reset the first run flag after execution
     fi
