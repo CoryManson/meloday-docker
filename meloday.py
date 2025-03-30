@@ -9,10 +9,17 @@ from plexapi.server import PlexServer
 from plexapi.audio import Track
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
+# Added logging to all functions for better traceability
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # Get the base directory of the script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_config(filepath="config.yml"):
+    logging.debug("Loading configuration from %s", filepath)
     with open(os.path.join(BASE_DIR, filepath), "r", encoding="utf-8") as file:
         return yaml.safe_load(file)
 
@@ -29,6 +36,7 @@ SONIC_SIMILAR_LIMIT = config["playlist"]["sonic_similar_limit"]
 
 PERIOD_PHRASES = config["period_phrases"]
 def get_period_phrase(period):
+    logging.debug("Getting period phrase for period: %s", period)
     return PERIOD_PHRASES.get(period, f"in the {period}")
 
 # Convert paths to be relative to BASE_DIR
@@ -101,6 +109,7 @@ def wrap_text(text, font, draw, max_width):
 # Removed most debugging prints from these functions,
 # except for warnings or errors.
 def fetch_historical_tracks(period):
+    logging.debug("Fetching historical tracks for period: %s", period)
     """
     Fetch tracks from Plex history that match the current daypart,
     while excluding recently played tracks.
@@ -112,61 +121,73 @@ def fetch_historical_tracks(period):
     history_start = now - timedelta(days=HISTORY_LOOKBACK_DAYS)
     exclude_start = now - timedelta(days=EXCLUDE_PLAYED_DAYS)
 
-    history_entries = [
-        entry for entry in music_section.history(mindate=history_start)
-        if entry.viewedAt and entry.viewedAt.hour in period_hours
-    ]
-    excluded_entries = [
-        entry for entry in music_section.history(mindate=exclude_start)
-        if entry.viewedAt
-    ]
-
-    excluded_keys = {entry.ratingKey for entry in excluded_entries}
-    filtered_tracks = [
-        entry for entry in history_entries
-        if entry.ratingKey not in excluded_keys
-    ]
-
-    # If no historical tracks found, fallback
-    if not filtered_tracks:
-        fallback_entries = [
+    try:
+        history_entries = [
             entry for entry in music_section.history(mindate=history_start)
             if entry.viewedAt and entry.viewedAt.hour in period_hours
-               and entry.ratingKey not in excluded_keys
         ]
-        if fallback_entries:
-            filtered_tracks = fallback_entries
+        logging.debug("Fetched %d history entries", len(history_entries))
 
-    # Genre balancing
-    track_play_counts = Counter()
-    genre_count = Counter()
-    for track in filtered_tracks:
-        track_play_counts[track] += 1
-        for genre in track.grandparentTitle or []:
-            genre_count[genre] += 1
+        excluded_entries = [
+            entry for entry in music_section.history(mindate=exclude_start)
+            if entry.viewedAt
+        ]
+        logging.debug("Fetched %d excluded entries", len(excluded_entries))
 
-    sorted_tracks = sorted(filtered_tracks, key=lambda t: track_play_counts[t], reverse=True)
-    split_index = max(1, len(sorted_tracks) // 4)
-    popular_tracks = sorted_tracks[:split_index]
-    rare_tracks = sorted_tracks[split_index:]
+        excluded_keys = {entry.ratingKey for entry in excluded_entries}
+        filtered_tracks = [
+            entry for entry in history_entries
+            if entry.ratingKey not in excluded_keys
+        ]
+        logging.debug("Filtered down to %d tracks", len(filtered_tracks))
 
-    balanced_selection = (
-        random.sample(rare_tracks, min(len(rare_tracks), int(MAX_TRACKS * 0.75)))
-        + random.sample(popular_tracks, min(len(popular_tracks), int(MAX_TRACKS * 0.25)))
-    )
+        # If no historical tracks found, fallback
+        if not filtered_tracks:
+            fallback_entries = [
+                entry for entry in music_section.history(mindate=history_start)
+                if entry.viewedAt and entry.viewedAt.hour in period_hours
+                   and entry.ratingKey not in excluded_keys
+            ]
+            if fallback_entries:
+                filtered_tracks = fallback_entries
+            logging.debug("Fallback provided %d tracks", len(filtered_tracks))
 
-    if genre_count:
-        most_common_genre, most_common_count = genre_count.most_common(1)[0]
-        max_genre_limit = int(MAX_TRACKS * 0.25)
-        if most_common_count > max_genre_limit:
-            balanced_selection = (
-                [t for t in balanced_selection if most_common_genre not in t.genres][:max_genre_limit]
-                + [t for t in balanced_selection if most_common_genre in t.genres][:max_genre_limit]
-            )
+        # Genre balancing
+        track_play_counts = Counter()
+        genre_count = Counter()
+        for track in filtered_tracks:
+            track_play_counts[track] += 1
+            for genre in track.grandparentTitle or []:
+                genre_count[genre] += 1
 
-    return balanced_selection, excluded_keys
+        sorted_tracks = sorted(filtered_tracks, key=lambda t: track_play_counts[t], reverse=True)
+        split_index = max(1, len(sorted_tracks) // 4)
+        popular_tracks = sorted_tracks[:split_index]
+        rare_tracks = sorted_tracks[split_index:]
+
+        balanced_selection = (
+            random.sample(rare_tracks, min(len(rare_tracks), int(MAX_TRACKS * 0.75)))
+            + random.sample(popular_tracks, min(len(popular_tracks), int(MAX_TRACKS * 0.25)))
+        )
+
+        if genre_count:
+            most_common_genre, most_common_count = genre_count.most_common(1)[0]
+            max_genre_limit = int(MAX_TRACKS * 0.25)
+            if most_common_count > max_genre_limit:
+                balanced_selection = (
+                    [t for t in balanced_selection if most_common_genre not in t.genres][:max_genre_limit]
+                    + [t for t in balanced_selection if most_common_genre in t.genres][:max_genre_limit]
+                )
+
+        logging.debug("Balanced selection contains %d tracks", len(balanced_selection))
+        return balanced_selection, excluded_keys
+
+    except Exception as e:
+        logging.error("Error fetching historical tracks: %s", e)
+        return [], set()
 
 def filter_low_rated_tracks(tracks):
+    logging.debug("Filtering low-rated tracks")
     """
     Filter out tracks, albums, or artists with a 1-star rating (rating <=2),
     skipping ephemeral tracks that lack ratingKey or parentRatingKey.
@@ -196,6 +217,7 @@ def filter_low_rated_tracks(tracks):
     return filtered
 
 def clean_title(title):
+    logging.debug("Cleaning title: %s", title)
     version_keywords = [
         "extended", "deluxe", "remaster", "remastered", "live", "acoustic", "edit",
         "version", "anniversary", "special edition", "radio edit", "album version",
@@ -223,6 +245,7 @@ def clean_title(title):
 
 
 def process_tracks(tracks):
+    logging.debug("Processing tracks")
     """
     Process tracks to remove duplicates and balance artist/genre representation.
     """
@@ -273,6 +296,7 @@ def process_tracks(tracks):
 
 
 def fetch_sonically_similar_tracks(reference_tracks, excluded_keys=None):
+    logging.debug("Fetching sonically similar tracks")
     """
     Fetch sonically similar tracks while ensuring excluded tracks (played in the last X days) are removed.
     """
@@ -315,6 +339,7 @@ def fetch_sonically_similar_tracks(reference_tracks, excluded_keys=None):
 
 
 def similarity_score(current, candidate, limit=20, max_distance=1.0):
+    logging.debug("Calculating similarity score between tracks")
     try:
         similars = current.sonicallySimilar(limit=limit, maxDistance=max_distance)
     except Exception:
@@ -325,6 +350,7 @@ def similarity_score(current, candidate, limit=20, max_distance=1.0):
     return 100
 
 def sort_by_sonic_similarity_greedy(tracks, limit=20, max_distance=1.0):
+    logging.debug("Sorting tracks by sonic similarity")
     if len(tracks) < 2:
         return tracks
     remaining = list(tracks)
@@ -343,6 +369,7 @@ def sort_by_sonic_similarity_greedy(tracks, limit=20, max_distance=1.0):
     return sorted_list
 
 def generate_playlist_title_and_description(period, tracks):
+    logging.debug("Generating playlist title and description")
     descriptor_map = load_descriptor_map("moodmap.json")
     day_name = datetime.now().strftime("%A")
 
@@ -406,6 +433,7 @@ def generate_playlist_title_and_description(period, tracks):
     return title, description
 
 def apply_text_to_cover(image_path, text):
+    logging.debug("Applying text to cover image: %s", image_path)
     try:
         prefix = "Meloday for "
         if text.startswith(prefix):
@@ -458,6 +486,7 @@ def apply_text_to_cover(image_path, text):
         return image_path
 
 def create_or_update_playlist(name, tracks, description, cover_file):
+    logging.debug("Creating or updating playlist: %s", name)
     try:
         existing_playlist = None
         for playlist in plex.playlists():
@@ -483,6 +512,7 @@ def create_or_update_playlist(name, tracks, description, cover_file):
         pass
 
 def find_first_and_last_tracks(tracks, period):
+    logging.debug("Finding first and last tracks for period: %s", period)
     if not tracks:
         return None, None
     valid_hours = set(time_periods[period]["hours"])
@@ -500,6 +530,8 @@ def find_first_and_last_tracks(tracks, period):
 
 # ---------------------------------------------------------------------
 def main():
+    logging.debug("Starting main function")
+
     # Step 0% - Start
     print_status(0, "Starting track selection...")
 
