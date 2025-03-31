@@ -37,6 +37,9 @@ SONIC_SIMILAR_LIMIT = config["playlist"]["sonic_similar_limit"]
 PERIOD_PHRASES = config["period_phrases"]
 def get_period_phrase(period):
     logging.debug("Getting period phrase for period: %s", period)
+    logging.debug("PERIOD_PHRASES dictionary: %s", PERIOD_PHRASES)
+    if period not in PERIOD_PHRASES:
+        logging.warning("Period '%s' not found in PERIOD_PHRASES. Using fallback.", period)
     return PERIOD_PHRASES.get(period, f"in the {period}")
 
 # Convert paths to be relative to BASE_DIR
