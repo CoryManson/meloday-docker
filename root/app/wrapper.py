@@ -26,10 +26,12 @@ def get_current_time_period(config):
 
 def main():
     logging.info("Starting time period monitor.")
-    config = load_config()
     last_time_period = None
 
     while True:
+        # Reload the configuration file on each iteration
+        config = load_config()
+
         current_time_period = get_current_time_period(config)
 
         logging.info(f"Current time period: {current_time_period}, Last time period: {last_time_period}")

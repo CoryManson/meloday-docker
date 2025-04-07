@@ -74,13 +74,17 @@ def get_current_time_period():
     being the exact hours for that daypart, possibly wrapping midnight.
     """
     current_hour = datetime.now().hour
+    logging.debug("Current hour: %d", current_hour)
 
     for period, details in time_periods.items():
         period_hours = details["hours"]  # no sorting
+        logging.debug("Checking period '%s' with hours: %s", period, period_hours)
         if current_hour in period_hours:
+            logging.debug("Matched period: %s", period)
             return period
 
     # Fallback if not found
+    logging.warning("No matching period found for hour: %d. Falling back to 'Late Night'", current_hour)
     return "Late Night"
 
 def load_descriptor_map(filepath="moodmap.json"):
@@ -125,12 +129,14 @@ def fetch_historical_tracks(period):
     exclude_start = now - timedelta(days=EXCLUDE_PLAYED_DAYS)
 
     try:
+        logging.debug("Fetching history entries from %s", history_start)
         history_entries = [
             entry for entry in music_section.history(mindate=history_start)
             if entry.viewedAt and entry.viewedAt.hour in period_hours
         ]
         logging.debug("Fetched %d history entries", len(history_entries))
 
+        logging.debug("Fetching excluded entries from %s", exclude_start)
         excluded_entries = [
             entry for entry in music_section.history(mindate=exclude_start)
             if entry.viewedAt
@@ -146,6 +152,7 @@ def fetch_historical_tracks(period):
 
         # If no historical tracks found, fallback
         if not filtered_tracks:
+            logging.warning("No historical tracks found. Attempting fallback.")
             fallback_entries = [
                 entry for entry in music_section.history(mindate=history_start)
                 if entry.viewedAt and entry.viewedAt.hour in period_hours
@@ -309,6 +316,7 @@ def fetch_sonically_similar_tracks(reference_tracks, excluded_keys=None):
 
     for track in reference_tracks:
         try:
+            logging.debug("Fetching similar tracks for: %s", track.title)
             similars = track.sonicallySimilar(limit=SONIC_SIMILAR_LIMIT)
 
             # Ensure we're filtering by last play date
@@ -318,24 +326,26 @@ def fetch_sonically_similar_tracks(reference_tracks, excluded_keys=None):
 
                 # Exclude if it was played recently
                 if last_played and last_played >= exclude_start:
-                    print(f"EXCLUDED (sonicallySimilar): {s.title} - Last played {last_played}")
+                    logging.debug("Excluded (recent play): %s - Last played %s", s.title, last_played)
                     continue
 
                 # Exclude if it's already in the excluded keys
                 if excluded_keys and s.ratingKey in excluded_keys:
-                    print(f"EXCLUDED (recent play): {s.title} - In excluded keys")
+                    logging.debug("Excluded (in excluded keys): %s", s.title)
                     continue
 
                 filtered_similars.append(s)
+
+            logging.debug("Found %d similar tracks after filtering", len(filtered_similars))
 
             # Run deduplication **before** adding similar tracks
             final_similars = process_tracks(filter_low_rated_tracks(filtered_similars))
             similar_tracks.extend(final_similars)
 
         except Exception as e:
-            print(f"Error fetching sonically similar tracks: {e}")
-            pass
+            logging.error("Error fetching sonically similar tracks for %s: %s", track.title, e)
 
+    logging.debug("Total sonically similar tracks fetched: %d", len(similar_tracks))
     return similar_tracks
 
 
@@ -539,59 +549,100 @@ def main():
     print_status(0, "Starting track selection...")
 
     period = get_current_time_period()
+    logging.debug("Current period: %s", period)
     print_status(10, f"Current time period: {period}")
 
     # Step 1: Fetch historical
     print_status(20, "Fetching historical tracks...")
     historical, excluded_keys = fetch_historical_tracks(period)
+    logging.debug("Historical tracks fetched: %d", len(historical))
+    logging.debug("Excluded keys: %s", excluded_keys)
 
     # Guarantee ~30% historical
     guaranteed_count = int(MAX_TRACKS * 0.3)
     guaranteed_historical = random.sample(historical, min(guaranteed_count, len(historical)))
+    logging.debug("Guaranteed historical tracks: %d", len(guaranteed_historical))
 
     # Step 2: Fetch similar
     print_status(30, "Fetching sonically similar tracks...")
     similar = fetch_sonically_similar_tracks(guaranteed_historical, excluded_keys=excluded_keys)
+    logging.debug("Sonically similar tracks fetched: %d", len(similar))
 
     # Combine
     print_status(40, "Combining & processing tracks...")
     all_tracks = guaranteed_historical + similar
+    logging.debug("Total tracks before processing: %d", len(all_tracks))
     final_tracks = process_tracks(all_tracks)
+    logging.debug("Tracks after processing: %d", len(final_tracks))
+
+    if not final_tracks:
+        logging.error("No tracks found for the current period. Aborting script.")
+        print_status(100, "No tracks found. Aborting.")
+        return
 
     # Step 3: Ensure we reach MAX_TRACKS
     progress_step = 40
-    while len(final_tracks) < MAX_TRACKS:
+    max_attempts = 10  # Limit the number of attempts to avoid infinite loop
+    attempts = 0
+
+    while len(final_tracks) < MAX_TRACKS and attempts < max_attempts:
         progress_step += 5
         print_status(progress_step, f"Attempting to add more tracks...")
+        attempts += 1
+
+        logging.debug("Attempt %d to add more tracks", attempts)
+        logging.debug("Current final_tracks count: %d", len(final_tracks))
 
         more_historical, more_excluded = fetch_historical_tracks(period)
+        logging.debug("Additional historical tracks fetched: %d", len(more_historical))
         excluded_keys |= more_excluded
+        logging.debug("Updated excluded keys: %s", excluded_keys)
+
         leftover_count = MAX_TRACKS - len(final_tracks)
         leftover_historical = random.sample(more_historical, min(leftover_count, len(more_historical)))
+        logging.debug("Leftover historical tracks: %d", len(leftover_historical))
 
         more_similar = fetch_sonically_similar_tracks(final_tracks, excluded_keys=excluded_keys)
+        logging.debug("Additional sonically similar tracks fetched: %d", len(more_similar))
+
         additional_tracks = process_tracks(leftover_historical + more_similar)
-        final_tracks.extend(additional_tracks[:leftover_count])
+        logging.debug("Additional tracks after processing: %d", len(additional_tracks))
 
         if not additional_tracks:
+            logging.warning("No additional tracks found. Breaking loop to avoid stalling.")
             break
+
+        final_tracks.extend(additional_tracks[:leftover_count])
+        logging.debug("Updated final_tracks count: %d", len(final_tracks))
+
+    if attempts >= max_attempts:
+        logging.warning("Reached maximum attempts to add tracks. Proceeding with available tracks.")
 
     print_status(70, "Finding first & last historical tracks...")
     first_track, last_track = find_first_and_last_tracks(final_tracks[:MAX_TRACKS], period)
+    logging.debug("First track: %s", first_track)
+    logging.debug("Last track: %s", last_track)
+
     middle_tracks = [t for t in final_tracks[:MAX_TRACKS] if t not in {first_track, last_track}]
+    logging.debug("Middle tracks count: %d", len(middle_tracks))
 
     # Step 4: Sonic sort (GREEDY)
     if middle_tracks:
         print_status(80, "Performing GREEDY sonic sort...")
         middle_tracks = sort_by_sonic_similarity_greedy(middle_tracks)
+        logging.debug("Middle tracks after sorting: %d", len(middle_tracks))
 
     final_ordered_tracks = (
         [first_track] + middle_tracks + [last_track]
         if first_track and last_track else final_tracks[:MAX_TRACKS]
     )
+    logging.debug("Final ordered tracks count: %d", len(final_ordered_tracks))
 
     print_status(90, "Creating/Updating playlist...")
     title, description = generate_playlist_title_and_description(period, final_ordered_tracks)
+    logging.debug("Generated playlist title: %s", title)
+    logging.debug("Generated playlist description: %s", description)
+
     create_or_update_playlist(title, final_ordered_tracks, description, time_periods[period]['cover'])
 
     # Step 5: Done
@@ -600,3 +651,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
