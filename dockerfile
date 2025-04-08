@@ -24,7 +24,7 @@ RUN \
     wheel && \
   /lsiopy/bin/pip install -U --no-cache-dir --find-links https://wheel-index.linuxserver.io/alpine-3.21/ \
     -r https://raw.githubusercontent.com/trackstacker/meloday/refs/heads/main/requirements.txt && \
-  git clone --branch docker https://github.com/CoryManson/meloday-docker.git && \
+  git clone --branch docker https://github.com/CoryManson/meloday-docker.git meloday && \
   echo "**** cleanup ****" && \
   apk del --purge \
     build-dependencies && \
